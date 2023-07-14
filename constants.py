@@ -2,12 +2,14 @@ import logging
 
 import pymongo as pymongo
 
-# logging.basicConfig(
-#     # filename='syccbot.log',
-#     format="[%(asctime)s > %(levelname)s > %(name)s] %(message)s",
-#     level=logging.INFO
-# )
-# logger = logging.getLogger(__name__)
+logging.basicConfig(
+    # filename='syccbot.log',
+    format="[%(asctime)s > %(levelname)s > %(name)s] %(message)s",
+    level=logging.INFO
+)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+logger = logging.getLogger(__name__)
 
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
