@@ -16,10 +16,10 @@ def main() -> None:
     app = Application.builder().token(os.environ['TOKEN']).build()
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start, block=False)],
+        entry_points=[CommandHandler("start", start)],
         states={
             MAIN_MENU: [
-                MessageHandler(filters.Regex("^Tasks$"), tasks, block=False),
+                MessageHandler(filters.Regex("^Tasks$"), tasks),
             ],
             TASKS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, task_selected)
