@@ -1,5 +1,6 @@
 from telegram import Update
-from telegram.ext import Application, ConversationHandler, CommandHandler, MessageHandler, filters, PicklePersistence, AIORateLimiter
+from telegram.ext import (Application, ConversationHandler, CommandHandler,
+                          MessageHandler, filters, PicklePersistence, AIORateLimiter, ChatMemberHandler)
 import os
 
 import helpers
@@ -8,6 +9,7 @@ from start import start
 from tasks import tasks, task_selected
 from error_handler import error_handler
 from test_code import test_code
+from chat_member import show_chats, track_chats
 
 from dotenv import load_dotenv
 
@@ -40,6 +42,12 @@ def main() -> None:
     )
 
     app.add_handler(conv_handler)
+
+    app.add_handler(ChatMemberHandler(
+        track_chats, ChatMemberHandler.MY_CHAT_MEMBER))
+
+    app.add_handler(CommandHandler("show_chats", show_chats))
+
     app.add_error_handler(error_handler)
 
     helpers.mongodb_task_init()
