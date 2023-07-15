@@ -7,7 +7,8 @@ import pymongo
 import requests
 from typing import Optional, Tuple
 from urllib.request import urlopen
-from telegram import Update, ReplyKeyboardMarkup, ChatMemberUpdated, ChatMember, Chat
+from telegram import Update, ReplyKeyboardMarkup, ChatMemberUpdated, ChatMember, Chat, InlineKeyboardButton, \
+    InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import (Application, ConversationHandler, CommandHandler,
                           MessageHandler, filters, PicklePersistence, AIORateLimiter, ChatMemberHandler, ContextTypes)
@@ -41,7 +42,7 @@ tasks_col = mydb["tasks"]
 
 
 # -----------------------------------------------HELPERS----------------------------------------------------------------
-def mongodb_task_init() -> None:
+def mongodb_task_init():
     list_of_cols = mydb.list_collection_names()
     if "tasks" not in list_of_cols:
         task_dict = {
@@ -86,37 +87,12 @@ def extract_status_change(chat_member_update: ChatMemberUpdated) -> Optional[Tup
 # ----------------------------------------------START-------------------------------------------------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     chat = update.message.chat
+    user = update.message.from_user
 
     logger.info(f'/start command from {chat.first_name} {chat.last_name}')
 
     context.bot_data.setdefault('chat_ids', set()).add(chat.id)
-
-    # chat_found = chats_col.find_one({"id": chat.id})
-    # if not chat_found:
-    #     chat_dict = {
-    #         "id": chat.id,
-    #         "type": chat.type,
-    #         "last_name": chat.last_name,
-    #         "first_name": chat.first_name
-    #     }
-    #     chats_col.insert_one(chat_dict)
-    #     logger.info("added new chat: " + str(chat_dict))
-
-    user = update.message.from_user
-
     context.bot_data.setdefault('user_ids', set()).add(user.id)
-
-    # user_found = users_col.find_one({"id": user.id})
-    # if not user_found:
-    #     user_dict = {
-    #         "is_bot": user.is_bot,
-    #         "first_name": user.first_name,
-    #         "last_name": user.last_name,
-    #         "id": user.id,
-    #         "language_code": user.language_code
-    #     }
-    #     users_col.insert_one(user_dict)
-    #     logger.info("added new user: " + str(user_dict))
 
     await update.message.reply_text("Welcome to the code checker bot!")
 
@@ -154,11 +130,20 @@ async def tasks(update: Update, _) -> int:
 
     buttons = []
     for task in tasks_list:
-        buttons.append(['{}. {}'.format(task['_id'], task['title'])])
+        buttons.append([InlineKeyboardButton('{}. {}'.format(task['_id'], task['title']), callback_data=str(1))])
 
-    keyboard = ReplyKeyboardMarkup(buttons)
+    # keyboard = ReplyKeyboardMarkup(buttons)
 
-    await update.message.reply_text(text="choose task", reply_markup=keyboard)
+    # reply_markup = InlineKeyboardMarkup(buttons)
+
+    # keyboard = [
+    #     [
+    #         InlineKeyboardButton("1", callback_data=str(1)),
+    #         InlineKeyboardButton("2", callback_data=str(2)),
+    #     ]
+    # ]
+    reply_markup = InlineKeyboardMarkup(buttons)
+    await update.message.reply_text(text="choose task", reply_markup=reply_markup)
 
     return TASKS
 
@@ -341,7 +326,8 @@ def main() -> None:
             ]
         },
         fallbacks=[
-            CommandHandler("start", start)
+            CommandHandler('start', start),
+            CommandHandler('menu', main_menu)
         ],
         persistent=True,
         name='main_conversation'
@@ -355,8 +341,6 @@ def main() -> None:
     app.add_handler(CommandHandler("show_chats", show_chats))
 
     app.add_error_handler(error_handler)
-
-    mongodb_task_init()
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
