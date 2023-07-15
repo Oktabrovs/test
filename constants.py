@@ -1,7 +1,10 @@
 import logging
+import os
 import pymongo as pymongo
 import warnings
 from telegram.warnings import PTBDeprecationWarning
+from dotenv import load_dotenv
+
 
 warnings.filterwarnings('error', category=PTBDeprecationWarning)
 
@@ -15,6 +18,9 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
+load_dotenv()
+
+DEVELOPER_CHAT_ID = os.environ['DEVELOPER_CHAT_ID']
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["code_checker"]
