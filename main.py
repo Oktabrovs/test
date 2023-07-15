@@ -1,4 +1,4 @@
-from telegram.ext import Application, ConversationHandler, CommandHandler, MessageHandler, filters, PicklePersistence
+from telegram.ext import Application, ConversationHandler, CommandHandler, MessageHandler, filters, PicklePersistence, AIORateLimiter
 import os
 
 import helpers
@@ -15,7 +15,7 @@ load_dotenv()
 def main() -> None:
     persistence = PicklePersistence(filepath='persistence.pickle')
 
-    app = Application.builder().token(os.environ['TOKEN']).persistence(
+    app = Application.builder().token(os.environ['TOKEN']).rate_limiter(AIORateLimiter()).persistence(
         persistence=persistence).build()
 
     conv_handler = ConversationHandler(
