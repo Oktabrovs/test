@@ -1,3 +1,4 @@
+from telegram import Update
 from telegram.ext import Application, ConversationHandler, CommandHandler, MessageHandler, filters, PicklePersistence, AIORateLimiter
 import os
 
@@ -43,7 +44,7 @@ def main() -> None:
 
     helpers.mongodb_task_init()
 
-    app.run_polling()
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
