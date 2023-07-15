@@ -3,7 +3,7 @@ from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes
 from urllib.request import urlopen
 import requests
-from constants import TEST_CODE
+from constants import TEST_CODE, logger
 from dotenv import load_dotenv
 
 
@@ -35,8 +35,8 @@ async def test_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     with open('test_files/{}.py'.format(context.chat_data['task_id']), "r") as test_f:
         unit_test_str += test_f.read()
 
-    print(f'--- code from user\n{main_str}\n---')
-    print(f'--- unit tests\n{unit_test_str}\n---')
+    logger.info(f'code from user:\n{main_str}')
+    logger.info(f'unit tests:\n{unit_test_str}')
 
     data = {
         "files": [
@@ -47,7 +47,7 @@ async def test_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     x = requests.post(url, json=data, headers=headers)
 
-    print(x.json())
+    logger.info(f'result from glot:\n{x.json()}')
 
     text = x.json()
 

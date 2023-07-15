@@ -11,7 +11,7 @@ async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         ["blank", "blank"],
         ["blank"]
     ]
-    keyboard = ReplyKeyboardMarkup(buttons)
+    keyboard = ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
 
     await update.message.reply_text(text="Main menu:", reply_markup=keyboard)
 

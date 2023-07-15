@@ -7,7 +7,8 @@ warnings.filterwarnings('error', category=PTBDeprecationWarning)
 
 logging.basicConfig(
     # filename='syccbot.log',
-    format="[%(asctime)s > %(levelname)s > %(name)s] %(message)s",
+    # format="[%(asctime)s %(levelname)s] %(message)s",
+    format="[%(levelname)s] %(message)s",
     level=logging.INFO
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)

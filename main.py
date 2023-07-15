@@ -32,7 +32,7 @@ def main() -> None:
                                ~filters.COMMAND, test_code)
             ]
         },
-        fallbacks=[],
+        fallbacks=[CommandHandler("start", start)],
         persistent=True,
         name='main_conversation'
     )

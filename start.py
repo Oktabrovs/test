@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from constants import chats_col, users_col
+from constants import chats_col, users_col, logger
 from main_menu import main_menu
 
 
@@ -9,7 +9,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     chat = update.message.chat
 
-    print(f'\n/start command from {chat.first_name} {chat.last_name}\n')
+    logger.info(f'/start command from {chat.first_name} {chat.last_name}')
 
     chat_found = chats_col.find_one({"id": chat.id})
     if not chat_found:
@@ -20,7 +20,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             "first_name": chat.first_name
         }
         chats_col.insert_one(chat_dict)
-        print("added new chat: " + str(chat_dict))
+        logger.info("added new chat: " + str(chat_dict))
 
     user = update.message.from_user
     user_found = users_col.find_one({"id": user.id})
@@ -33,7 +33,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             "language_code": user.language_code
         }
         users_col.insert_one(user_dict)
-        print("added new user: " + str(user_dict))
+        logger.info("added new user: " + str(user_dict))
 
     await update.message.reply_text("Welcome to the code checker bot!")
 
