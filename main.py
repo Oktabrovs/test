@@ -1,4 +1,4 @@
-from telegram.ext import Application, ConversationHandler, CommandHandler, MessageHandler, filters
+from telegram.ext import Application, ConversationHandler, CommandHandler, MessageHandler, filters, PicklePersistence
 import os
 
 import helpers
@@ -13,7 +13,10 @@ load_dotenv()
 
 
 def main() -> None:
-    app = Application.builder().token(os.environ['TOKEN']).build()
+    persistence = PicklePersistence(filepath='persistence.pickle')
+
+    app = Application.builder().token(os.environ['TOKEN']).persistence(
+        persistence=persistence).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -29,7 +32,9 @@ def main() -> None:
                                ~filters.COMMAND, test_code)
             ]
         },
-        fallbacks=[]
+        fallbacks=[],
+        persistent=True,
+        name='main_conversation'
     )
     app.add_handler(conv_handler)
 
