@@ -53,8 +53,7 @@ def mongodb_task_init() -> None:
             'test_file': '1.py'
         }
         tasks_col.insert_one(task_dict)
-        # logger.info("added task to db")
-        print("added task to db")
+        logger.info("added task to db")
 
 
 def extract_status_change(chat_member_update: ChatMemberUpdated) -> Optional[Tuple[bool, bool]]:
@@ -125,7 +124,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 # ----------------------------------------------MAIN MENU---------------------------------------------------------------
-async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def main_menu(update: Update, _) -> int:
     buttons = [
         ["Tasks", "blank"],
         ["blank", "blank"],
@@ -139,17 +138,19 @@ async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 # ----------------------------------------------TASKS-------------------------------------------------------------------
-async def choose_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def choose_level(update: Update, _) -> int:
     levels = [['Level 1'], ['Level 2'], ['Level 3']]
     keyboard = ReplyKeyboardMarkup(levels, one_time_keyboard=True)
 
-    await update.message.reply_text(text="choose level", reply_markup=keyboard, )
+    await update.message.reply_text(text="choose level", reply_markup=keyboard)
 
     return CHOOSE_LEVEL
 
 
-async def tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    tasks_list = tasks_col.find().limit(10)
+async def tasks(update: Update, _) -> int:
+    level = int(update.message.text.split()[-1])
+
+    tasks_list = tasks_col.find({'level': level}).limit(10)
 
     buttons = []
     for task in tasks_list:
@@ -328,6 +329,9 @@ def main() -> None:
             MAIN_MENU: [
                 MessageHandler(filters.Regex("^Tasks$"), choose_level),
             ],
+            CHOOSE_LEVEL: [
+                MessageHandler(filters.Regex("^Level [123]$"), tasks)
+            ],
             TASKS: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, task_selected)
             ],
@@ -336,7 +340,9 @@ def main() -> None:
                                ~filters.COMMAND, send_code)
             ]
         },
-        fallbacks=[CommandHandler("start", start)],
+        fallbacks=[
+            CommandHandler("start", start)
+        ],
         persistent=True,
         name='main_conversation'
     )
