@@ -1,6 +1,9 @@
 import logging
-
 import pymongo as pymongo
+import warnings
+from telegram.warnings import PTBDeprecationWarning
+
+warnings.filterwarnings('error', category=PTBDeprecationWarning)
 
 logging.basicConfig(
     # filename='syccbot.log',
