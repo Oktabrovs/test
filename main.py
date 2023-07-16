@@ -5,13 +5,15 @@ import logging
 import os
 import pymongo
 import requests
+from bson.objectid import ObjectId
 from typing import Optional, Tuple
 from urllib.request import urlopen
 from telegram import Update, ReplyKeyboardMarkup, ChatMemberUpdated, ChatMember, Chat, InlineKeyboardButton, \
-    InlineKeyboardMarkup
+    InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.constants import ParseMode
 from telegram.ext import (Application, ConversationHandler, CommandHandler,
-                          MessageHandler, filters, PicklePersistence, AIORateLimiter, ChatMemberHandler, ContextTypes)
+                          MessageHandler, filters, PicklePersistence, AIORateLimiter, ChatMemberHandler, ContextTypes,
+                          CallbackQueryHandler)
 
 # ------------------------------------ CONSTANTS -----------------------------------------------------------------------
 logging.basicConfig(
@@ -25,6 +27,12 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 DEVELOPER_CHAT_ID = os.environ['DEVELOPER_CHAT_ID']
+url = os.environ['GLOT_URL']
+
+headers = {
+    'Authorization': os.environ['GLOT_AUTHORIZATION'],
+    'Content-type': 'application/json'
+}
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["code_checker"]
@@ -51,7 +59,7 @@ def mongodb_task_init():
             'title': 'Multiply',
             'description': 'Write function to multiply two numbers and return result',
             'tags': ['*'],
-            'test_file': '1.py'
+            'test_file': '64b3714da4f8394ab18d5caa.py'
         }
         tasks_col.insert_one(task_dict)
         logger.info("added task to db")
@@ -102,20 +110,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 # ----------------------------------------------MAIN MENU---------------------------------------------------------------
 async def main_menu(update: Update, _) -> int:
     buttons = [
-        ["Tasks", "blank"],
-        ["blank", "blank"],
-        ["blank"]
+        [InlineKeyboardButton('Tasks', callback_data=str(TASKS))],
+        [InlineKeyboardButton('blank', callback_data=123)],
+        [InlineKeyboardButton('blank', callback_data=321)]
     ]
-    keyboard = ReplyKeyboardMarkup(buttons, one_time_keyboard=True)
+    reply_markup = InlineKeyboardMarkup(buttons)
 
-    await update.message.reply_text(text="Main menu:", reply_markup=keyboard)
+    await update.message.reply_text(text="Main menu:", reply_markup=reply_markup)
 
     return MAIN_MENU
 
 
 # ----------------------------------------------TASKS-------------------------------------------------------------------
-async def choose_level(update: Update, _) -> int:
-    levels = [['Level 1'], ['Level 2'], ['Level 3']]
+async def choose_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    context.user_data['offset'] = 0
+
+    levels = [['1'], ['2'], ['3']]
     keyboard = ReplyKeyboardMarkup(levels, one_time_keyboard=True)
 
     await update.message.reply_text(text="choose level", reply_markup=keyboard)
@@ -123,37 +133,43 @@ async def choose_level(update: Update, _) -> int:
     return CHOOSE_LEVEL
 
 
-async def tasks(update: Update, _) -> int:
-    level = int(update.message.text.split()[-1])
+async def tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # await context.bot.send_message(update.message.chat_id, 'a', reply_markup=ReplyKeyboardRemove())
+    level = int(update.message.text)
+    offset = context.user_data['offset']
 
-    tasks_list = tasks_col.find({'level': level}).limit(10)
+    tasks_list = tasks_col.find({'level': level}).skip(offset).limit(10)
 
     buttons = []
-    for task in tasks_list:
-        buttons.append([InlineKeyboardButton('{}. {}'.format(task['_id'], task['title']), callback_data=str(1))])
+    for i, task in enumerate(tasks_list, offset + 1):
+        buttons.append([InlineKeyboardButton('{}. {}'.format(i, task['title']), callback_data=str(task['_id']))])
 
-    # keyboard = ReplyKeyboardMarkup(buttons)
-
-    # reply_markup = InlineKeyboardMarkup(buttons)
-
-    # keyboard = [
-    #     [
-    #         InlineKeyboardButton("1", callback_data=str(1)),
-    #         InlineKeyboardButton("2", callback_data=str(2)),
-    #     ]
-    # ]
     reply_markup = InlineKeyboardMarkup(buttons)
     await update.message.reply_text(text="choose task", reply_markup=reply_markup)
 
     return TASKS
 
 
-url = os.environ['GLOT_URL']
+async def task_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
 
-headers = {
-    'Authorization': os.environ['GLOT_AUTHORIZATION'],
-    'Content-type': 'application/json'
-}
+    task_id = query.data
+    context.chat_data['task_id'] = task_id
+
+    task = tasks_col.find_one({'_id': ObjectId(task_id)})
+
+    text = 'task #{}\n{}\n{}\n\nPaste python code or send .py file'.format(
+        task['_id'], task['title'], task['description'])
+
+    buttons = [['Back']]
+    keyboard = ReplyKeyboardMarkup(buttons)
+
+    await query.edit_message_text(
+        text=text
+    )
+
+    return TASK_SELECTED
 
 
 async def send_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -192,25 +208,6 @@ async def send_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(text=text)
 
     return TEST_CODE
-
-
-async def task_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    msg_text = update.message.text
-    task_id = msg_text[:msg_text.index('.')]
-
-    context.chat_data['task_id'] = task_id
-
-    task = tasks_col.find_one({'_id': int(task_id)})
-
-    text = 'task #{}\n{}\n{}\n\nPaste python code or send .py file'.format(
-        task['_id'], task['title'], task['description'])
-
-    buttons = [['Back']]
-    keyboard = ReplyKeyboardMarkup(buttons)
-
-    await update.message.reply_text(text=text, reply_markup=keyboard)
-
-    return TASK_SELECTED
 
 
 # ----------------------------------------------CHAT MEMBERS TRACKER----------------------------------------------------
@@ -312,34 +309,30 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             MAIN_MENU: [
-                MessageHandler(filters.Regex("^Tasks$"), choose_level),
+                MessageHandler(filters.Regex("^Tasks$"), tasks)
             ],
             CHOOSE_LEVEL: [
-                MessageHandler(filters.Regex("^Level [123]$"), tasks)
+                # MessageHandler(filters.Regex("^[123]$"), tasks)
             ],
             TASKS: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, task_selected)
+                # CallbackQueryHandler(task_selected)
+                # MessageHandler(filters.TEXT & ~filters.COMMAND, task_selected)
             ],
             TASK_SELECTED: [
-                MessageHandler(filters.TEXT | filters.Document.PY &
-                               ~filters.COMMAND, send_code)
+                # MessageHandler(filters.TEXT | filters.Document.PY &
+                #                ~filters.COMMAND, send_code)
             ]
         },
-        fallbacks=[
-            CommandHandler('start', start),
-            CommandHandler('menu', main_menu)
-        ],
+        fallbacks=[CommandHandler('menu', main_menu)],
         persistent=True,
-        name='main_conversation'
+        name='main_conversation',
     )
 
     app.add_handler(conv_handler)
 
     app.add_handler(ChatMemberHandler(
         track_chats, ChatMemberHandler.MY_CHAT_MEMBER))
-
     app.add_handler(CommandHandler("show_chats", show_chats))
-
     app.add_error_handler(error_handler)
 
     app.run_polling(allowed_updates=Update.ALL_TYPES)
