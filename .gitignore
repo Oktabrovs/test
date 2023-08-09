@@ -4,3 +4,4 @@ venv
 .vscode
 persistence.pickle
 .idea
+main_copy.py
