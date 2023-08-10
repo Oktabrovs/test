@@ -1,17 +1,90 @@
 from os import environ
+from urllib.request import urlopen
 
-from telegram import Update
-from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHandler, MessageHandler, filters
+import pymongo
+from telegram import Update, File
+from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHandler, MessageHandler, filters, \
+    ConversationHandler
+
+'''Constants'''
+myclient = pymongo.MongoClient("mongodb://localhost:27017/")
+mydb = myclient["code_checker"]
+challenges_col = mydb["challenges"]
+
+DEVELOPER_CHAT_ID = environ['DEVELOPER_CHAT_ID']
+
+CHALLENGE_DESCRIPTION = 11
+CHALLENGE_SOLUTION = 12
+CHALLENGE_TEST = 13
+
+'''Handlers'''
 
 
-async def start(update: Update, _) -> None:
+async def start_handler(update: Update, _) -> None:
+    print('/start', update)
     await update.message.reply_text('Welcome to the code checker bot!')
 
 
 async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print('code_handler', update)
     main_code_string: str = ''
 
-    print(update)
+    if update.message.text:
+        main_code_string = update.message.text
+    elif update.message.document:
+        file_link: File = await context.bot.get_file(update.message.document.file_id)
+        file = urlopen(file_link.file_path)
+        for line in file:
+            main_code_string += line.decode('utf-8')
+
+    unit_tests_string: str = ''
+
+
+async def new_challenge_handler(update: Update, _) -> int:
+    if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
+        await update.message.reply_text('Hello, Developer!\n\nSend description of new challenge')
+        return CHALLENGE_DESCRIPTION
+    else:
+        return ConversationHandler.END
+
+
+async def challenge_description_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    challenge_description: str = update.message.text
+    context.user_data['current_challenge_description'] = challenge_description
+    await update.message.reply_text('Send solution picture')
+    return CHALLENGE_SOLUTION
+
+
+async def challenge_solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    solution_photo_id: str = update.message.photo[0].file_id
+    context.user_data['current_challenge_solution_photo_id'] = solution_photo_id
+    await update.message.reply_text('Send test file')
+    return CHALLENGE_TEST
+
+
+async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    challenge_test_string: str = ''
+    test_file_link = await context.bot.get_file(update.message.document.file_id)
+    test_file = urlopen(test_file_link.file_path)
+    for line in test_file:
+        challenge_test_string += line.decode('utf-8')
+
+    challenge_dict = {
+        'description': context.user_data['current_challenge_description'],
+        'solution_photo_id': context.user_data['current_challenge_solution_photo_id'],
+        'tests': challenge_test_string
+    }
+
+    challenge_id = challenges_col.insert_one(challenge_dict)
+    challenge_dict['challenge_id'] = challenge_id.inserted_id
+
+    context.bot_data.update(challenge_dict)
+
+    await update.message.reply_text('New challenge added')
+    return ConversationHandler.END
+
+
+'''Main'''
 
 
 def main() -> None:
@@ -19,7 +92,29 @@ def main() -> None:
 
     app = Application.builder().token(environ['TOKEN']).persistence(persistence).build()
 
-    app.add_handler(CommandHandler('start', start))
+    app.add_handler(CommandHandler('start', start_handler))
+
+    new_challenge_conversation = ConversationHandler(
+        entry_points=[CommandHandler('new_challenge', new_challenge_handler)],
+        states={
+            CHALLENGE_DESCRIPTION: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, challenge_description_handler)
+            ],
+            CHALLENGE_SOLUTION: [
+                MessageHandler(filters.PHOTO, challenge_solution_handler)
+            ],
+            CHALLENGE_TEST: [
+                MessageHandler(filters.Document.PY, challenge_tests_handler)
+            ]
+        },
+        allow_reentry=True,
+        fallbacks=[],
+        persistent=True,
+        name='new_challenge_conversation'
+    )
+
+    app.add_handler(new_challenge_conversation)
+
     app.add_handler(MessageHandler((filters.TEXT | filters.Document.PY) & ~filters.COMMAND, code_handler))
 
     app.run_polling()
