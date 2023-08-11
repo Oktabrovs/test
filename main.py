@@ -2,6 +2,7 @@ from os import environ
 from urllib.request import urlopen
 
 import pymongo
+import requests
 from telegram import Update, File
 from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHandler, MessageHandler, filters, \
     ConversationHandler
@@ -12,6 +13,12 @@ mydb = myclient["code_checker"]
 challenges_col = mydb["challenges"]
 
 DEVELOPER_CHAT_ID = environ['DEVELOPER_CHAT_ID']
+GLOT_URL = environ['GLOT_URL']
+
+headers = {
+    'Authorization': environ['GLOT_AUTHORIZATION'],
+    'Content-type': 'application/json'
+}
 
 CHALLENGE_DESCRIPTION = 11
 CHALLENGE_SOLUTION = 12
@@ -27,17 +34,48 @@ async def start_handler(update: Update, _) -> None:
 
 async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print('code_handler', update)
-    main_code_string: str = ''
+    user_code_string: str = ''
+    challenge_test_string: str = context.bot_data['tests']
 
     if update.message.text:
-        main_code_string = update.message.text
+        user_code_string = update.message.text
     elif update.message.document:
         file_link: File = await context.bot.get_file(update.message.document.file_id)
         file = urlopen(file_link.file_path)
         for line in file:
-            main_code_string += line.decode('utf-8')
+            user_code_string += line.decode('utf-8')
 
-    unit_tests_string: str = ''
+    data = {
+        'files': [
+            {'name': 'tests.py', 'content': challenge_test_string},
+            {'name': 'user_code.py', 'content': user_code_string}
+        ]
+    }
+
+    req = requests.post(url=GLOT_URL, json=data, headers=headers)
+    req_json = req.json()
+    test_output = req_json['stderr']
+    print(req_json)
+    test_output_list = test_output.split('\n')
+    for i, line in enumerate(test_output_list):
+        print(i, line)
+
+    text: str = test_output_list[0]
+    text = text.replace('.', '✅').replace('F', '❌') + '\n\n'
+
+    if test_output_list[-2] == 'OK':
+        text += f'{test_output_list[-4]}\n🎉'
+    else:
+        if req_json['stdout']:
+            text = f"❕{req_json['stdout']}\n{text}"
+        fail_description = ''
+        for s in test_output_list:
+            if s.startswith(' : ❗'):
+                fail_description = s[3:]
+                break
+        text += fail_description
+
+    await update.message.reply_text(text=text)
 
 
 async def new_challenge_handler(update: Update, _) -> int:
