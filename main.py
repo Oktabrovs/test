@@ -9,9 +9,10 @@ from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHa
     ConversationHandler
 
 '''Constants'''
-myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-mydb = myclient["code_checker"]
-challenges_col = mydb["challenges"]
+myclient = pymongo.MongoClient('mongodb://localhost:27017/')
+mydb = myclient['code_checker']
+users_col = mydb['users']
+challenges_col = mydb['challenges']
 solvers_col = mydb['solvers']
 
 DEVELOPER_CHAT_ID = environ['DEVELOPER_CHAT_ID']
@@ -30,8 +31,23 @@ CHALLENGE_TEST = 13
 '''Handlers'''
 
 
-async def start_handler(update: Update, _) -> None:
-    print('/start', update)
+async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_found = users_col.find_one({"chat_id": update.effective_chat.id})
+    if not user_found:
+        user_dict = {
+            'chat_id': update.effective_chat.id,
+            'username': update.effective_user.username,
+            'full_name': update.effective_user.full_name,
+            'solved_challenges': [],
+            'points': 0
+        }
+        users_col.insert_one(user_dict)
+
+        if update.effective_user.username:
+            context.chat_data['username'] = f'@{update.effective_user.username}'
+        else:
+            context.chat_data['username'] = update.effective_user.full_name
+
     await update.message.reply_text('Welcome to the code checker bot!')
 
 
@@ -66,20 +82,25 @@ async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         text: str = test_output
 
     if text.endswith('OK\n'):
-        if update.effective_user.username:
-            user: str = f'@{update.effective_user.username}'
-        else:
-            user: str = update.effective_user.full_name
+        username: str = context.chat_data['username']
         result: float = float(re.search(r"\d+\.\d+", text).group())
         solver_dict: dict = {
-            'challenge_id': context.bot_data['challenge_id'],
-            'user': user,
+            'user': username,
             'result': result,
             'solution': user_code_string,
             'code_length': len(user_code_string)
         }
-        solvers_col.update_one({'challenge_id': context.bot_data['challenge_id'], 'user': user},
-                               {"$set": solver_dict},
+
+        solver_found = solvers_col.find_one({'challenge_id': context.bot_data['challenge_id'], 'user': username})
+        if not solver_found:
+            user = users_col.find_one({'chat_id': update.effective_chat.id})
+            user['solved_challenges'].append(context.bot_data['challenge_id'])
+            user['points'] += 1
+            users_col.update_one({'_id': user['_id']},
+                                 {'$set': user})
+
+        solvers_col.update_one({'challenge_id': context.bot_data['challenge_id'], 'user': username},
+                               {'$set': solver_dict},
                                upsert=True)
         await update.message.reply_text('✅')
 
