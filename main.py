@@ -153,6 +153,9 @@ async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_
     return ConversationHandler.END
 
 
+async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(context.bot_data.get('description'))
+
 '''Main'''
 
 
@@ -162,6 +165,8 @@ def main() -> None:
     app = Application.builder().token(environ['TOKEN']).persistence(persistence).build()
 
     app.add_handler(CommandHandler('start', start_handler))
+
+    app.add_handler(CommandHandler('bugungi_masala', challenge_info_handler))
 
     new_challenge_conversation = ConversationHandler(
         entry_points=[CommandHandler('new_challenge', new_challenge_handler)],
