@@ -160,7 +160,8 @@ async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_photo('AgACAgIAAxkBAAIE12TV1mYl-tHFjC5njOqTbwfLS9_MAAL4yjEbOQGxSgfnJ6qSBvxaAQADAgADcwADMAQ')
+    await update.message.reply_photo(
+        'AgACAgIAAxkBAAIE12TV1mYl-tHFjC5njOqTbwfLS9_MAAL4yjEbOQGxSgfnJ6qSBvxaAQADAgADcwADMAQ')
 
 
 async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -169,6 +170,18 @@ async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     else:
         await update.message.reply_text("noma'lum buyruq")
+
+
+async def leaderboard_handler(update: Update, _) -> None:
+    users = users_col.find({'points': {'$gt': 0}}).sort('points', pymongo.DESCENDING)
+
+    text: str = ''
+    for i, user in enumerate(users[:10], 1):
+        username = f"@{user.get('username')}" if user.get('username') else user.get('full_name')
+        text += '{}. {} - {} ball\n'.format(i if i > 1 else '🏆', username, user.get('points'))
+    await update.message.reply_text(text)
+
+
 '''Main'''
 
 
@@ -184,6 +197,11 @@ def main() -> None:
     app.add_handler(CommandHandler('yechim', solution_handler))
 
     app.add_handler(CommandHandler('yordam', help_handler))
+
+    app.add_handler(CommandHandler('leaderboard', leaderboard_handler))
+
+    # TODO add daily_leader_board
+    # TODO fix yordam
 
     new_challenge_conversation = ConversationHandler(
         entry_points=[CommandHandler('yangi_masala', new_challenge_handler)],
