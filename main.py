@@ -156,6 +156,10 @@ async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_
 async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(context.bot_data.get('description'))
 
+
+async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_photo('AgACAgIAAxkBAAIE12TV1mYl-tHFjC5njOqTbwfLS9_MAAL4yjEbOQGxSgfnJ6qSBvxaAQADAgADcwADMAQ')
+
 '''Main'''
 
 
@@ -167,6 +171,8 @@ def main() -> None:
     app.add_handler(CommandHandler('start', start_handler))
 
     app.add_handler(CommandHandler('bugungi_masala', challenge_info_handler))
+
+    app.add_handler(CommandHandler('yordam', help_handler))
 
     new_challenge_conversation = ConversationHandler(
         entry_points=[CommandHandler('new_challenge', new_challenge_handler)],
