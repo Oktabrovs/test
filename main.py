@@ -54,7 +54,9 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print('code_handler', update)
     user_code_string: str = ''
-    challenge_test_string: str = context.bot_data['tests']
+    if not context.bot_data.get('tests'):
+        return
+    challenge_test_string: str = context.bot_data.get('tests')
 
     if update.message.text:
         user_code_string = update.message.text
@@ -73,7 +75,7 @@ async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     req = requests.post(url=GLOT_URL, json=data, headers=headers)
     req_json = req.json()
-    test_output = req_json['stderr']
+    test_output = req_json.get('stderr')
 
     if DIVIDER in test_output:
         text: str = test_output[test_output.find(DIVIDER):]
@@ -160,6 +162,13 @@ async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_T
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_photo('AgACAgIAAxkBAAIE12TV1mYl-tHFjC5njOqTbwfLS9_MAAL4yjEbOQGxSgfnJ6qSBvxaAQADAgADcwADMAQ')
 
+
+async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
+        await update.message.reply_photo(context.bot_data.get('solution_photo_id'))
+
+    else:
+        await update.message.reply_text("noma'lum buyruq")
 '''Main'''
 
 
@@ -172,10 +181,12 @@ def main() -> None:
 
     app.add_handler(CommandHandler('bugungi_masala', challenge_info_handler))
 
+    app.add_handler(CommandHandler('yechim', solution_handler))
+
     app.add_handler(CommandHandler('yordam', help_handler))
 
     new_challenge_conversation = ConversationHandler(
-        entry_points=[CommandHandler('new_challenge', new_challenge_handler)],
+        entry_points=[CommandHandler('yangi_masala', new_challenge_handler)],
         states={
             CHALLENGE_DESCRIPTION: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, challenge_description_handler)
