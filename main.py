@@ -1,3 +1,4 @@
+import re
 from os import environ
 from urllib.request import urlopen
 
@@ -11,9 +12,11 @@ from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHa
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
 mydb = myclient["code_checker"]
 challenges_col = mydb["challenges"]
+solvers_col = mydb['solvers']
 
 DEVELOPER_CHAT_ID = environ['DEVELOPER_CHAT_ID']
 GLOT_URL = environ['GLOT_URL']
+DIVIDER = '----------------------------------------------------------------------'
 
 headers = {
     'Authorization': environ['GLOT_AUTHORIZATION'],
@@ -55,27 +58,34 @@ async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     req = requests.post(url=GLOT_URL, json=data, headers=headers)
     req_json = req.json()
     test_output = req_json['stderr']
-    print(req_json)
-    test_output_list = test_output.split('\n')
-    for i, line in enumerate(test_output_list):
-        print(i, line)
 
-    text: str = test_output_list[0]
-    text = text.replace('.', '✅').replace('F', '❌') + '\n\n'
-
-    if test_output_list[-2] == 'OK':
-        text += f'{test_output_list[-4]}\n🎉'
+    if DIVIDER in test_output:
+        text: str = test_output[test_output.find(DIVIDER):]
+        text = text.replace(DIVIDER, '---')
     else:
-        if req_json['stdout']:
-            text = f"❕{req_json['stdout']}\n{text}"
-        fail_description = ''
-        for s in test_output_list:
-            if s.startswith(' : ❗'):
-                fail_description = s[3:]
-                break
-        text += fail_description
+        text: str = test_output
 
-    await update.message.reply_text(text=text)
+    if text.endswith('OK\n'):
+        if update.effective_user.username:
+            user: str = f'@{update.effective_user.username}'
+        else:
+            user: str = update.effective_user.full_name
+        result: float = float(re.search(r"\d+\.\d+", text).group())
+        solver_dict: dict = {
+            'challenge_id': context.bot_data['challenge_id'],
+            'user': user,
+            'result': result,
+            'solution': user_code_string,
+            'code_length': len(user_code_string)
+        }
+        solvers_col.update_one({'challenge_id': context.bot_data['challenge_id'], 'user': user},
+                               {"$set": solver_dict},
+                               upsert=True)
+        await update.message.reply_text('✅')
+
+    text = re.sub(r"<([^>]+)>", r'\1', text)
+
+    await update.message.reply_html(text=f'<code>{text}</code>')
 
 
 async def new_challenge_handler(update: Update, _) -> int:
