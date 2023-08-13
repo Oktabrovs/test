@@ -52,7 +52,6 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    print('code_handler', update)
     user_code_string: str = ''
     if not context.bot_data.get('tests'):
         return
