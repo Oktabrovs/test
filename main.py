@@ -48,7 +48,11 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         else:
             context.chat_data['username'] = update.effective_user.full_name
 
-    await update.message.reply_text('Welcome to the code checker bot!')
+    await update.message.reply_text(
+        "Kodni tekshiruvchi botga xush kelibsiz!\n\n"
+        "Bugungi masalani tasvirlash uchun /bugungi_masala buyrug'ini yuboring.\n"
+        "Botdan foydalanishda yordam so'rash uchun /yordam buyrug'ini yuboring.\n\n"
+        "Kodingizni matn yoki .py fayl sifatida yuborishingiz mumkin.")
 
 
 async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -194,6 +198,7 @@ async def todays_leaderboard_handler(update: Update, context: ContextTypes.DEFAU
 
     await update.message.reply_text(text)
 
+
 '''Main'''
 
 
@@ -215,6 +220,7 @@ def main() -> None:
     app.add_handler(CommandHandler('bugungi_top', todays_leaderboard_handler))
 
     # TODO fix yordam
+    # TODO fix /yechim - to redirect user to sy channel
 
     new_challenge_conversation = ConversationHandler(
         entry_points=[CommandHandler('yangi_masala', new_challenge_handler)],
