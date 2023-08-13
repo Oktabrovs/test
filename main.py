@@ -170,9 +170,8 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
         await update.message.reply_photo(context.bot_data.get('solution_photo_id'))
-
     else:
-        await update.message.reply_text("noma'lum buyruq")
+        await update.message.reply_text("Ushbu masalaning yechimi @yangibaevs telegram kanalida ko'rsatiladi")
 
 
 async def leaderboard_handler(update: Update, _) -> None:
@@ -220,7 +219,6 @@ def main() -> None:
     app.add_handler(CommandHandler('bugungi_top', todays_leaderboard_handler))
 
     # TODO fix yordam
-    # TODO fix /yechim - to redirect user to sy channel
 
     new_challenge_conversation = ConversationHandler(
         entry_points=[CommandHandler('yangi_masala', new_challenge_handler)],
