@@ -162,7 +162,7 @@ async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_T
     await update.message.reply_text(context.bot_data.get('description'))
 
 
-async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def help_handler(update: Update, _) -> None:
     text: str = "Kodingizni matn yoki .py fayl sifatida yuborishingiz mumkin.\n\n" \
                 "Bugungi masalani tasvirlash uchun /bugungi_masala buyrug'ini yuboring.\n" \
                 "Peshqadamlar ro'yxatini ko'rsatish uchun /top buyrug'ini yuboring.\n" \
