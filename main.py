@@ -163,8 +163,12 @@ async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_T
 
 
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_photo(
-        'AgACAgIAAxkBAAIE12TV1mYl-tHFjC5njOqTbwfLS9_MAAL4yjEbOQGxSgfnJ6qSBvxaAQADAgADcwADMAQ')
+    text: str = "Kodingizni matn yoki .py fayl sifatida yuborishingiz mumkin.\n\n" \
+                "Bugungi masalani tasvirlash uchun /bugungi_masala buyrug'ini yuboring.\n" \
+                "Peshqadamlar ro'yxatini ko'rsatish uchun /top buyrug'ini yuboring.\n" \
+                "Bugungi masala bo'yicha peshqadamlar ro'yxatini ko'rsatish uchun /bugungi_top buyrug'ini yuboring.\n"
+
+    await update.message.reply_text(text)
 
 
 async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -217,8 +221,6 @@ def main() -> None:
     app.add_handler(CommandHandler('top', leaderboard_handler))
 
     app.add_handler(CommandHandler('bugungi_top', todays_leaderboard_handler))
-
-    # TODO fix yordam
 
     new_challenge_conversation = ConversationHandler(
         entry_points=[CommandHandler('yangi_masala', new_challenge_handler)],
