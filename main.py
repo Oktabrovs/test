@@ -178,9 +178,22 @@ async def leaderboard_handler(update: Update, _) -> None:
     text: str = ''
     for i, user in enumerate(users[:10], 1):
         username = f"@{user.get('username')}" if user.get('username') else user.get('full_name')
-        text += '{}. {} - {} ball\n'.format(i if i > 1 else '🏆', username, user.get('points'))
+        text += '{}. {} - {} ball\n'.format(i, username, user.get('points'))
     await update.message.reply_text(text)
 
+
+async def todays_leaderboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    text: str = 'Tezlik:\n'
+    solvers = solvers_col.find({'challenge_id': context.bot_data.get('challenge_id')}).sort('result')
+    for i, solver in enumerate(solvers[:10], 1):
+        text += '{}. {} - {}s\n'.format(i, solver.get('user'), solver.get('result'))
+
+    text += '\n---\n\nQisqalik:\n'
+    solvers = solvers_col.find({'challenge_id': context.bot_data.get('challenge_id')}).sort('code_length')
+    for i, solver in enumerate(solvers[:10], 1):
+        text += '{}. {} - {} belgi\n'.format(i, solver.get('user'), solver.get('code_length'))
+
+    await update.message.reply_text(text)
 
 '''Main'''
 
@@ -198,9 +211,10 @@ def main() -> None:
 
     app.add_handler(CommandHandler('yordam', help_handler))
 
-    app.add_handler(CommandHandler('leaderboard', leaderboard_handler))
+    app.add_handler(CommandHandler('top', leaderboard_handler))
 
-    # TODO add daily_leader_board
+    app.add_handler(CommandHandler('bugungi_top', todays_leaderboard_handler))
+
     # TODO fix yordam
 
     new_challenge_conversation = ConversationHandler(
