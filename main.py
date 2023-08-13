@@ -10,9 +10,9 @@ from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHa
 
 '''Constants'''
 
-#TODO add logging
-#TODO add error handler
-#TODO chat member handler
+# TODO add logging
+# TODO add error handler
+# TODO chat member handler
 
 myclient = pymongo.MongoClient('mongodb://localhost:27017/')
 mydb = myclient['code_checker']
