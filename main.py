@@ -16,12 +16,10 @@ from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHa
 
 '''Constants'''
 
-# TODO add yechim to bot settings
-
 logging.basicConfig(
-    # filename='syccbot.log', TODO uncomment
-    # format="[%(asctime)s %(levelname)s] %(message)s",
-    format="[%(levelname)s] %(message)s",
+    filename='syccbot.log',
+    format="[%(asctime)s %(levelname)s] %(message)s",
+    # format="[%(levelname)s] %(message)s",
     level=logging.INFO
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
