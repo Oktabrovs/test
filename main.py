@@ -1,17 +1,20 @@
+import html
+import json
 import logging
 import re
+import traceback
 from os import environ
 from urllib.request import urlopen
 
 import pymongo
 import requests
 from telegram import Update, File
+from telegram.constants import ParseMode
 from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHandler, MessageHandler, filters, \
     ConversationHandler
 
 '''Constants'''
 
-# TODO add error handler
 # TODO chat member handler
 # TODO add yechim to bot settings
 
@@ -234,6 +237,28 @@ async def todays_leaderboard_handler(update: Update, context: ContextTypes.DEFAU
     await update.message.reply_text(text)
 
 
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.error("Exception while handling an update:", exc_info=context.error)
+
+    tb_list = traceback.format_exception(
+        None, context.error, context.error.__traceback__)
+    tb_string = "".join(tb_list)
+
+    update_str = update.to_dict() if isinstance(update, Update) else str(update)
+    message = (
+        f"An exception was raised while handling an update\n"
+        f"<pre>update = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}"
+        "</pre>\n\n"
+        f"<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n"
+        f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n"
+        f"<pre>{html.escape(tb_string)}</pre>"
+    )
+
+    await context.bot.send_message(
+        chat_id=DEVELOPER_CHAT_ID, text=message, parse_mode=ParseMode.HTML
+    )
+
+
 '''Main'''
 
 
@@ -276,6 +301,8 @@ def main() -> None:
     app.add_handler(new_challenge_conversation)
 
     app.add_handler(MessageHandler((filters.TEXT | filters.Document.PY) & ~filters.COMMAND, code_handler))
+
+    app.add_error_handler(error_handler)
 
     app.run_polling()
 
