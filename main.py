@@ -146,7 +146,7 @@ async def new_challenge_handler(update: Update, _) -> int:
 
 
 async def challenge_description_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    challenge_description: str = update.message.text
+    challenge_description: str = update.message.text_html
     logger.info('challenge_description\n{}'.format(challenge_description))
     context.user_data['current_challenge_description'] = challenge_description
     await update.message.reply_text('Send solution picture')
@@ -190,7 +190,7 @@ async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_
 async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info('/bugungi_masala from {}'.format(update.effective_chat.id))
 
-    await update.message.reply_text(context.bot_data.get('description'))
+    await update.message.reply_html(context.bot_data.get('description'))
 
 
 async def help_handler(update: Update, _) -> None:
