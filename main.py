@@ -16,7 +16,6 @@ from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHa
 
 '''Constants'''
 
-# TODO chat member handler
 # TODO add yechim to bot settings
 
 logging.basicConfig(
