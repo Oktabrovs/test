@@ -1,3 +1,4 @@
+import logging
 import re
 from os import environ
 from urllib.request import urlopen
@@ -10,9 +11,19 @@ from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHa
 
 '''Constants'''
 
-# TODO add logging
 # TODO add error handler
 # TODO chat member handler
+# TODO add yechim to bot settings
+
+logging.basicConfig(
+    # filename='syccbot.log', TODO uncomment
+    # format="[%(asctime)s %(levelname)s] %(message)s",
+    format="[%(levelname)s] %(message)s",
+    level=logging.INFO
+)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+logger = logging.getLogger(__name__)
 
 myclient = pymongo.MongoClient('mongodb://localhost:27017/')
 mydb = myclient['code_checker']
@@ -37,6 +48,7 @@ CHALLENGE_TEST = 13
 
 
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info('/start from {}'.format(update.effective_chat.id))
     user_found = users_col.find_one({"chat_id": update.effective_chat.id})
     if not user_found:
         user_dict = {
@@ -73,6 +85,8 @@ async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         file = urlopen(file_link.file_path)
         for line in file:
             user_code_string += line.decode('utf-8')
+
+    logger.info('received code\n{}\nfrom {}'.format(user_code_string, update.effective_chat.id))
 
     data = {
         'files': [
@@ -120,6 +134,7 @@ async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 
 async def new_challenge_handler(update: Update, _) -> int:
+    logger.info('/yangi_masala from user: {}'.format(update.message.chat_id))
     if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
         await update.message.reply_text('Hello, Developer!\n\nSend description of new challenge')
         return CHALLENGE_DESCRIPTION
@@ -129,6 +144,7 @@ async def new_challenge_handler(update: Update, _) -> int:
 
 async def challenge_description_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     challenge_description: str = update.message.text
+    logger.info('challenge_description\n{}'.format(challenge_description))
     context.user_data['current_challenge_description'] = challenge_description
     await update.message.reply_text('Send solution picture')
     return CHALLENGE_SOLUTION
@@ -136,6 +152,7 @@ async def challenge_description_handler(update: Update, context: ContextTypes.DE
 
 async def challenge_solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     solution_photo_id: str = update.message.photo[0].file_id
+    logger.info('solution_photo_id\n{}'.format(solution_photo_id))
     context.user_data['current_challenge_solution_photo_id'] = solution_photo_id
     await update.message.reply_text('Send test file')
     return CHALLENGE_TEST
@@ -148,6 +165,8 @@ async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_
     for line in test_file:
         challenge_test_string += line.decode('utf-8')
 
+    logger.info('challenge_test_string\n{}'.format(challenge_test_string))
+
     challenge_dict = {
         'description': context.user_data['current_challenge_description'],
         'solution_photo_id': context.user_data['current_challenge_solution_photo_id'],
@@ -159,15 +178,20 @@ async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_
 
     context.bot_data.update(challenge_dict)
 
+    logger.info('added new challenge')
+
     await update.message.reply_text('New challenge added')
     return ConversationHandler.END
 
 
 async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info('/bugungi_masala from {}'.format(update.effective_chat.id))
+
     await update.message.reply_text(context.bot_data.get('description'))
 
 
 async def help_handler(update: Update, _) -> None:
+    logger.info('/yordam from {}'.format(update.effective_chat.id))
     text: str = "Kodingizni matn yoki .py fayl sifatida yuborishingiz mumkin.\n\n" \
                 "Bugungi masalani tasvirlash uchun /bugungi_masala buyrug'ini yuboring.\n" \
                 "Peshqadamlar ro'yxatini ko'rsatish uchun /top buyrug'ini yuboring.\n" \
@@ -177,6 +201,7 @@ async def help_handler(update: Update, _) -> None:
 
 
 async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info('/yechim from {}'.format(update.effective_chat.id))
     if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
         await update.message.reply_photo(context.bot_data.get('solution_photo_id'))
     else:
@@ -184,6 +209,7 @@ async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def leaderboard_handler(update: Update, _) -> None:
+    logger.info('/top from {}'.format(update.effective_chat.id))
     users = users_col.find({'points': {'$gt': 0}}).sort('points', pymongo.DESCENDING)
 
     text: str = ''
@@ -194,6 +220,7 @@ async def leaderboard_handler(update: Update, _) -> None:
 
 
 async def todays_leaderboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info('/bugungi_top from {}'.format(update.effective_chat.id))
     text: str = 'Tezlik:\n'
     solvers = solvers_col.find({'challenge_id': context.bot_data.get('challenge_id')}).sort('result')
     for i, solver in enumerate(solvers[:10], 1):
