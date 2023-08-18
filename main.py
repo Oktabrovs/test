@@ -15,7 +15,6 @@ from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHa
     ConversationHandler, ChatMemberHandler
 
 # todo check for errors
-# todo remove developer from tops
 '''Constants'''
 
 logging.basicConfig(
@@ -136,8 +135,7 @@ async def code_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         text = text.replace(DIVIDER, '---')
     else:
         text: str = test_output
-
-    if text.endswith('OK\n'):
+    if text.endswith('OK\n') and DEVELOPER_CHAT_ID != str(update.effective_chat.id):
         username: str = context.chat_data['username']
         result: float = float(re.search(r"\d+\.\d+", text).group())
         solver_dict: dict = {
