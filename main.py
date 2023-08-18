@@ -15,12 +15,12 @@ from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHa
     ConversationHandler, ChatMemberHandler
 
 # todo check for errors
+# todo remove developer from tops
 '''Constants'''
 
 logging.basicConfig(
     filename='syccbot.log',
     format="[%(asctime)s %(levelname)s] %(message)s",
-    # format="[%(levelname)s] %(message)s",
     level=logging.INFO
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
