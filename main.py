@@ -14,6 +14,7 @@ from telegram.constants import ParseMode
 from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHandler, MessageHandler, filters, \
     ConversationHandler, ChatMemberHandler
 
+# todo check for errors
 '''Constants'''
 
 logging.basicConfig(
@@ -244,9 +245,13 @@ async def leaderboard_handler(update: Update, _) -> None:
     users = users_col.find({'points': {'$gt': 0}}).sort('points', pymongo.DESCENDING)
 
     text: str = ''
-    for i, user in enumerate(users[:10], 1):
-        username = f"@{user.get('username')}" if user.get('username') else user.get('full_name')
-        text += '{}. {} - {} ball\n'.format(i, username, user.get('points'))
+    
+    if len(list(users)):
+        for i, user in enumerate(users[:10], 1):
+            username = f"@{user.get('username')}" if user.get('username') else user.get('full_name')
+            text += '{}. {} - {} ball\n'.format(i, username, user.get('points'))
+    else:
+        text = 'hali aniqlanmagan'
     await update.message.reply_text(text)
 
 
