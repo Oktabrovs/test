@@ -235,7 +235,12 @@ async def help_handler(update: Update, _) -> None:
 async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info('/yechim from {}'.format(update.effective_chat.id))
     if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
-        await update.message.reply_photo(context.bot_data.get('solution_photo_id'))
+        logger.info(context.bot_data.get('solution_photo_id'))
+        solution_photo_id = context.bot_data.get('solution_photo_id')
+        if solution_photo_id:
+            await update.message.reply_photo(solution_photo_id)
+        else:
+            await update.message.reply_text('no solution photo found')
     else:
         await update.message.reply_text("Ushbu masalaning yechimi @yangibaevs telegram kanalida ko'rsatiladi")
 
@@ -245,7 +250,7 @@ async def leaderboard_handler(update: Update, _) -> None:
     users = users_col.find({'points': {'$gt': 0}}).sort('points', pymongo.DESCENDING)
 
     text: str = ''
-    
+
     if len(list(users)):
         for i, user in enumerate(users[:10], 1):
             username = f"@{user.get('username')}" if user.get('username') else user.get('full_name')
