@@ -218,8 +218,11 @@ async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_
 
 async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info('/bugungi_masala from {}'.format(update.effective_chat.id))
-
-    await update.message.reply_html(context.bot_data.get('description'))
+    task_description = context.bot_data.get('description')
+    if task_description:
+        await update.message.reply_html(task_description)
+    else:
+        await update.message.reply_text('masala topilmadi')
 
 
 async def help_handler(update: Update, _) -> None:
