@@ -178,14 +178,22 @@ async def challenge_description_handler(update: Update, context: ContextTypes.DE
     challenge_description: str = update.message.text_html
     logger.info('challenge_description\n{}'.format(challenge_description))
     context.user_data['current_challenge_description'] = challenge_description
-    await update.message.reply_text('Send solution picture')
+    await update.message.reply_text('Send solution picture or text')
     return CHALLENGE_SOLUTION
 
 
 async def challenge_solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    solution_photo_id: str = update.message.photo[0].file_id
-    logger.info('solution_photo_id\n{}'.format(solution_photo_id))
-    context.user_data['current_challenge_solution_photo_id'] = solution_photo_id
+
+    if update.message.photo:
+        solution_photo_id: str = update.message.photo[0].file_id
+        logger.info('solution_photo_id\n{}'.format(solution_photo_id))
+        context.user_data['current_challenge_solution_photo_id'] = solution_photo_id
+        context.user_data['current_challenge_solution_text'] = ''
+    else:
+        solution_text: str = update.message.text_html
+        logger.info('solution_text\n{}'.format(solution_text))
+        context.user_data['current_challenge_solution_text'] = solution_text
+        context.user_data['current_challenge_solution_photo_id'] = ''
     await update.message.reply_text('Send test file')
     return CHALLENGE_TEST
 
@@ -202,6 +210,7 @@ async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_
     challenge_dict = {
         'description': context.user_data['current_challenge_description'],
         'solution_photo_id': context.user_data['current_challenge_solution_photo_id'],
+        'solution_text': context.user_data['current_challenge_solution_text'],
         'tests': challenge_test_string
     }
 
@@ -238,10 +247,13 @@ async def help_handler(update: Update, _) -> None:
 async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.info('/yechim from {}'.format(update.effective_chat.id))
     if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
-        logger.info(context.bot_data.get('solution_photo_id'))
         solution_photo_id = context.bot_data.get('solution_photo_id')
+        solution_text = context.bot_data.get('solution_text')
+        logger.info(solution_photo_id)
         if solution_photo_id:
             await update.message.reply_photo(solution_photo_id)
+        elif solution_text:
+            await update.message.reply_html(solution_text)
         else:
             await update.message.reply_text('no solution photo found')
     else:
@@ -250,11 +262,11 @@ async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def leaderboard_handler(update: Update, _) -> None:
     logger.info('/top from {}'.format(update.effective_chat.id))
-    users = users_col.find({'points': {'$gt': 0}}).sort('points', pymongo.DESCENDING)
+    users = list(users_col.find({'points': {'$gt': 0}}).sort('points', pymongo.DESCENDING))
 
     text: str = ''
 
-    if len(list(users)):
+    if len(users):
         for i, user in enumerate(users[:10], 1):
             username = f"@{user.get('username')}" if user.get('username') else user.get('full_name')
             text += '{}. {} - {} ball\n'.format(i, username, user.get('points'))
@@ -391,7 +403,8 @@ def main() -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, challenge_description_handler)
             ],
             CHALLENGE_SOLUTION: [
-                MessageHandler(filters.PHOTO, challenge_solution_handler)
+                MessageHandler(filters.PHOTO, challenge_solution_handler),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, challenge_solution_handler)
             ],
             CHALLENGE_TEST: [
                 MessageHandler(filters.Document.PY, challenge_tests_handler)
