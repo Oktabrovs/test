@@ -4,3 +4,7 @@ venv
 .vscode
 persistence.pickle
 .idea
+syccbot.log
+testing/task.txt
+testing/task_tests.py
+testing/user_code.py
