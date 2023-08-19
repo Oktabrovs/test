@@ -33,6 +33,8 @@ challenges_col = mydb['challenges']
 solvers_col = mydb['solvers']
 
 DEVELOPER_CHAT_ID = environ['DEVELOPER_CHAT_ID']
+# CHANNEL_ID = environ['DEV_CHANNEL_ID']
+CHANNEL_ID = environ['PROD_CHANNEL_ID']
 GLOT_URL = environ['GLOT_URL']
 DIVIDER = '----------------------------------------------------------------------'
 
@@ -235,6 +237,17 @@ async def challenge_info_handler(update: Update, context: ContextTypes.DEFAULT_T
         await update.message.reply_text('masala topilmadi')
 
 
+async def post_bugungi_masala_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info('/post_bugungi_masala from {}'.format(update.effective_chat.id))
+    if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
+        task_description = context.bot_data.get('description')
+        if task_description:
+            task_description = 'Yangi masala:\n\n' + task_description
+            await context.bot.send_message(CHANNEL_ID, task_description, parse_mode=ParseMode.HTML)
+        else:
+            await update.message.reply_text('masala topilmadi')
+
+
 async def help_handler(update: Update, _) -> None:
     logger.info('/yordam from {}'.format(update.effective_chat.id))
     text: str = "Kodingizni matn yoki .py fayl sifatida yuborishingiz mumkin.\n\n" \
@@ -255,6 +268,23 @@ async def solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await update.message.reply_photo(solution_photo_id)
         elif solution_text:
             await update.message.reply_html(solution_text)
+        else:
+            await update.message.reply_text('no solution photo found')
+    else:
+        await update.message.reply_text("Ushbu masalaning yechimi @yangibaevs telegram kanalida ko'rsatiladi")
+
+
+async def post_solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info('/post_yechim from {}'.format(update.effective_chat.id))
+    if str(update.message.chat_id) == DEVELOPER_CHAT_ID:
+        solution_photo_id = context.bot_data.get('solution_photo_id')
+        solution_text = context.bot_data.get('solution_text')
+        logger.info(solution_photo_id)
+        if solution_photo_id:
+            await context.bot.send_photo(CHANNEL_ID, solution_photo_id, caption='Yechim')
+        elif solution_text:
+            solution_text = 'Yechim:\n\n' + solution_text
+            await context.bot.send_message(CHANNEL_ID, solution_text, parse_mode=ParseMode.HTML)
         else:
             await update.message.reply_text('no solution photo found')
     else:
@@ -396,6 +426,9 @@ def main() -> None:
     app.add_handler(CommandHandler('top', leaderboard_handler))
 
     app.add_handler(CommandHandler('bugungi_top', todays_leaderboard_handler))
+
+    app.add_handler(CommandHandler('post_bugungi_masala', post_bugungi_masala_handler))
+    app.add_handler(CommandHandler('post_yechim', post_solution_handler))
 
     new_challenge_conversation = ConversationHandler(
         entry_points=[CommandHandler('yangi_masala', new_challenge_handler)],
