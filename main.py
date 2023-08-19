@@ -198,10 +198,14 @@ async def challenge_solution_handler(update: Update, context: ContextTypes.DEFAU
 
 async def challenge_tests_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     challenge_test_string: str = ''
-    test_file_link = await context.bot.get_file(update.message.document.file_id)
-    test_file = urlopen(test_file_link.file_path)
-    for line in test_file:
-        challenge_test_string += line.decode('utf-8')
+
+    if update.message.text:
+        challenge_test_string = update.message.text_markdown_v2.replace('`', '')
+    else:
+        test_file_link = await context.bot.get_file(update.message.document.file_id)
+        test_file = urlopen(test_file_link.file_path)
+        for line in test_file:
+            challenge_test_string += line.decode('utf-8')
 
     logger.info('challenge_test_string\n{}'.format(challenge_test_string))
 
@@ -405,6 +409,7 @@ def main() -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, challenge_solution_handler)
             ],
             CHALLENGE_TEST: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, challenge_tests_handler),
                 MessageHandler(filters.Document.PY, challenge_tests_handler)
             ]
         },
