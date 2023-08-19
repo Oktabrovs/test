@@ -14,7 +14,6 @@ from telegram.constants import ParseMode
 from telegram.ext import Application, PicklePersistence, ContextTypes, CommandHandler, MessageHandler, filters, \
     ConversationHandler, ChatMemberHandler
 
-# todo check for errors
 '''Constants'''
 
 logging.basicConfig(
