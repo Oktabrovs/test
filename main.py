@@ -181,7 +181,6 @@ async def challenge_description_handler(update: Update, context: ContextTypes.DE
 
 
 async def challenge_solution_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-
     if update.message.photo:
         solution_photo_id: str = update.message.photo[0].file_id
         logger.info('solution_photo_id\n{}'.format(solution_photo_id))
@@ -421,7 +420,10 @@ def main() -> None:
 
     app.add_handler(new_challenge_conversation)
 
-    app.add_handler(MessageHandler((filters.TEXT | filters.Document.PY) & ~filters.COMMAND, code_handler))
+    app.add_handler(
+        MessageHandler((filters.TEXT | filters.Document.PY) &
+                       ~(filters.COMMAND | filters.UpdateType.CHANNEL_POSTS),
+                       code_handler))
     app.add_handler(ChatMemberHandler(track_chats, ChatMemberHandler.MY_CHAT_MEMBER))
     app.add_handler(CommandHandler('show_chats', show_chats))
     app.add_error_handler(error_handler)
