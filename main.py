@@ -21,6 +21,9 @@ from telegram.ext import (
     ConversationHandler,
     ChatMemberHandler,
 )
+from dotenv import load_dotenv
+
+load_dotenv()
 
 """Constants"""
 
