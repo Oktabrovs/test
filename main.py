@@ -1,1 +1,19 @@
-print(9)
+a=input("please enter your Full Name: ")
+b=input("please enter your Home Planet: ")
+c=input("please enter your Species: ")
+d=input("please enter your ID Number: ")
+e=input("please enter your official rank: ")
+#print("are these true about you?" + "\n", a, '\n', b, "\n", c, '\n', d)
+
+
+print("========================================")
+print("    GALACTIC FEDERATION ID CARD")
+print("========================================")
+print("Full Name:      ", a )
+print("Home Planet:    ", b )
+print("Species:        ", c )
+print("Rank:           ", e )
+
+print("----------------------------------------")
+print("ID Code: GF-", d,"-",b)
+print("========================================")
